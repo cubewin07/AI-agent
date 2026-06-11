@@ -1,27 +1,27 @@
 package com.myapp.dto.request;
 
-import com.myapp.model.enums.ExampleEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateExampleRequest {
+public class CreateSessionRequest {
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "Session name is required")
     private String name;
 
-    @Size(max = 1000)
-    private String description;
+    private String systemPrompt;
 
-    @NotNull
-    private ExampleEnum status;
+    @NotNull(message = "Model ID is required")
+    private UUID modelId;
+
+    private String enabledTools; // Comma-separated list of tool names
 }

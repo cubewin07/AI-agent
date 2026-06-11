@@ -1,6 +1,5 @@
 package com.myapp.dto.response;
 
-import com.myapp.model.enums.ExampleEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,12 +12,13 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExampleResponse {
-
+public class SessionResponse {
     private UUID id;
     private String name;
-    private String description;
-    private ExampleEnum status;
+    private String systemPrompt;
+    private UUID modelId;
+    private String modelName;
+    private String enabledTools;
     private Instant createdAt;
     private Instant updatedAt;
 }
