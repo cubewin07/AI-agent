@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:myapp;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+  cache:
+    type: simple
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
+
+logging:
+  level:
+    root: WARN
+    com.myapp: INFO
+
+security:
+  jwt:
+    secret: dGVzdC1zZWNyZXQta2V5LWZvci1zcHJpbmctYm9vdC10ZW1wbGF0ZS1hcHA=
+    expiration: 3600000
+    refresh-expiration: 604800000

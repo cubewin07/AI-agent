@@ -1,0 +1,25 @@
+spring:
+  jpa:
+    show-sql: false
+
+  data:
+    redis:
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+
+  cache:
+    type: redis
+
+logging:
+  config: classpath:logback-spring-prod.xml
+  requests:
+    enabled: false
+  level:
+    root: WARN
+    com.myapp: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,metrics,prometheus}
