@@ -1,5 +1,6 @@
 package com.myapp.agent;
 
+import com.myapp.agent.llm.AgentDecision;
 import com.myapp.agent.llm.ChatMessageDto;
 import com.myapp.agent.llm.LlmClient;
 import com.myapp.agent.llm.LlmClientFactory;
@@ -32,7 +33,7 @@ public class Agent {
     private static final int MAX_STEPS = 5;
 
     @Transactional
-    public String processQuery(SessionEntity session, String query) {
+    public String processQuery(SessionEntity session, String query, List<ChatMessageDto> clientHistory) {
         log.info("Processing query for session {}: {}", session.getId(), query);
 
         // 1. Save user query to database
@@ -44,16 +45,19 @@ public class Agent {
                 .build();
         chatMessageRepository.save(userMessage);
 
-        // 2. Load conversation history
-        List<ChatMessageEntity> historyEntities = chatMessageRepository.findBySessionOrderByCreatedAtAsc(session);
-        
-        // Convert history to DTOs for the LLM client
-        List<ChatMessageDto> history = historyEntities.stream()
-                .map(msg -> ChatMessageDto.builder()
-                        .role(msg.getRole().name())
-                        .content(msg.getContent())
-                        .build())
-                .collect(Collectors.toList());
+        // 2. Load conversation history (use clientHistory if provided, otherwise load from DB)
+        List<ChatMessageDto> history;
+        if (clientHistory != null) {
+            history = new ArrayList<>(clientHistory);
+        } else {
+            List<ChatMessageEntity> historyEntities = chatMessageRepository.findBySessionOrderByCreatedAtAsc(session);
+            history = historyEntities.stream()
+                    .map(msg -> ChatMessageDto.builder()
+                            .role(msg.getRole().name())
+                            .content(msg.getContent())
+                            .build())
+                    .collect(Collectors.toList());
+        }
 
         // 3. Get model details
         ModelEntity model = session.getModel();
@@ -102,13 +106,15 @@ public class Agent {
 
             log.debug("LLM Response: {}", llmResponse);
 
-            // Parse Thought, Action, and Final Answer
-            String thought = agentHelper.parseThought(llmResponse);
-            String action = agentHelper.parseAction(llmResponse);
-            String actionInput = agentHelper.parseActionInput(llmResponse);
-            String parsedFinalAnswer = agentHelper.parseFinalAnswer(llmResponse);
+            // Parse AgentDecision
+            AgentDecision decision = agentHelper.parseDecision(llmResponse);
+            String thought = decision.thought();
+            var toolCall = decision.toolCall();
+            String parsedFinalAnswer = decision.finalAnswer();
 
-            if (action != null) {
+            if (toolCall != null && toolCall.name() != null) {
+                String action = toolCall.name();
+                String actionInput = toolCall.arguments();
                 // LLM wants to use a tool
                 log.info("LLM is using tool: {} with input: {}", action, actionInput);
                 
@@ -131,28 +137,7 @@ public class Agent {
 
                 log.info("Tool {} returned: {}", action, toolResult);
 
-                // Save tool call and response to database as part of the step
-                ChatMessageEntity stepMessage = ChatMessageEntity.builder()
-                        .session(session)
-                        .role(ChatRole.ASSISTANT)
-                        .content("Thought: " + thought + "\nAction: " + action + "[" + actionInput + "]")
-                        .toolName(action)
-                        .stepNumber(step)
-                        .createdAt(Instant.now())
-                        .build();
-                chatMessageRepository.save(stepMessage);
-
-                ChatMessageEntity toolMessage = ChatMessageEntity.builder()
-                        .session(session)
-                        .role(ChatRole.TOOL)
-                        .content("Observation: " + toolResult)
-                        .toolName(action)
-                        .stepNumber(step)
-                        .createdAt(Instant.now())
-                        .build();
-                chatMessageRepository.save(toolMessage);
-
-                // Update scratchpad for the next iteration
+                // Update scratchpad for the next iteration (intermediate steps are NOT saved to DB)
                 currentScratchpad += "\nThought: " + thought + "\nAction: " + action + "[" + actionInput + "]\nObservation: " + toolResult;
 
             } else if (parsedFinalAnswer != null) {

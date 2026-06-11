@@ -62,7 +62,7 @@ public class SessionController {
     @PostMapping("/{id}/chat")
     public String chat(@PathVariable UUID id, @Valid @RequestBody ChatRequest request, @AuthenticationPrincipal UserDetails userDetails) {
         UserEntity user = getCurrentUser(userDetails);
-        return sessionService.chat(id, request.getQuery(), user);
+        return sessionService.chat(id, request.getQuery(), request.getHistory(), user);
     }
 
     @GetMapping("/{id}/history")

@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatMessageDto {
-    private String role; // user, assistant, system, tool
+    private String role; // user, assistant
     private String content;
 }

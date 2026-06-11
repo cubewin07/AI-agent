@@ -72,10 +72,10 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional
-    public String chat(UUID id, String query, UserEntity user) {
+    public String chat(UUID id, String query, List<com.myapp.agent.llm.ChatMessageDto> history, UserEntity user) {
         SessionEntity session = sessionRepository.findByIdAndOwner(id, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
-        return agent.processQuery(session, query);
+        return agent.processQuery(session, query, history);
     }
 
     @Override

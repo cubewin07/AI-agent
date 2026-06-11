@@ -1,5 +1,6 @@
 package com.myapp.service;
 
+import com.myapp.agent.llm.ChatMessageDto;
 import com.myapp.dto.request.CreateSessionRequest;
 import com.myapp.dto.response.ChatMessageResponse;
 import com.myapp.dto.response.SessionResponse;
@@ -14,6 +15,6 @@ public interface SessionService {
     SessionResponse getById(UUID id, UserEntity user);
     void delete(UUID id, UserEntity user);
     
-    String chat(UUID id, String query, UserEntity user);
+    String chat(UUID id, String query, List<ChatMessageDto> history, UserEntity user);
     List<ChatMessageResponse> getHistory(UUID id, UserEntity user);
 }

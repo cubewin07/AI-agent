@@ -76,24 +76,39 @@ class AgentTest {
         // Arrange
         when(llmClientFactory.getClient(ApiFormat.OPENAI)).thenReturn(llmClient);
 
-        // First LLM call returns a tool action
-        String llmResponse1 = "Thought: I need to calculate 2 + 2.\nAction: calculator[2 + 2]";
-        // Second LLM call returns the final answer
-        String llmResponse2 = "Thought: I have the result.\nFinal Answer: The answer is 4.0.";
+        // First LLM call returns a tool action in JSON format
+        String llmResponse1 = """
+                {
+                  "thought": "I need to calculate 2 + 2.",
+                  "toolCall": {
+                    "name": "calculator",
+                    "arguments": "2 + 2"
+                  },
+                  "finalAnswer": null
+                }
+                """;
+        // Second LLM call returns the final answer in JSON format
+        String llmResponse2 = """
+                {
+                  "thought": "I have the result.",
+                  "toolCall": null,
+                  "finalAnswer": "The answer is 4.0."
+                }
+                """;
 
         when(llmClient.generate(any(), any(), any(), any(), any()))
                 .thenReturn(llmResponse1)
                 .thenReturn(llmResponse2);
 
         // Act
-        String result = agent.processQuery(session, "What is 2 + 2?");
+        String result = agent.processQuery(session, "What is 2 + 2?", null);
 
         // Assert
         assertThat(result).isEqualTo("The answer is 4.0.");
 
-        // Verify messages saved to DB
+        // Verify messages saved to DB (only USER query and final ASSISTANT response)
         ArgumentCaptor<ChatMessageEntity> messageCaptor = ArgumentCaptor.forClass(ChatMessageEntity.class);
-        verify(chatMessageRepository, times(4)).save(messageCaptor.capture());
+        verify(chatMessageRepository, times(2)).save(messageCaptor.capture());
 
         List<ChatMessageEntity> savedMessages = messageCaptor.getAllValues();
         
@@ -101,21 +116,9 @@ class AgentTest {
         assertThat(savedMessages.get(0).getRole()).isEqualTo(ChatRole.USER);
         assertThat(savedMessages.get(0).getContent()).isEqualTo("What is 2 + 2?");
 
-        // 2. Assistant thought + action
+        // 2. Assistant final answer
         assertThat(savedMessages.get(1).getRole()).isEqualTo(ChatRole.ASSISTANT);
-        assertThat(savedMessages.get(1).getContent()).contains("Action: calculator[2 + 2]");
-        assertThat(savedMessages.get(1).getToolName()).isEqualTo("calculator");
-        assertThat(savedMessages.get(1).getStepNumber()).isEqualTo(1);
-
-        // 3. Tool observation
-        assertThat(savedMessages.get(2).getRole()).isEqualTo(ChatRole.TOOL);
-        assertThat(savedMessages.get(2).getContent()).contains("Observation: 4.0");
-        assertThat(savedMessages.get(2).getToolName()).isEqualTo("calculator");
-        assertThat(savedMessages.get(2).getStepNumber()).isEqualTo(1);
-
-        // 4. Assistant final answer
-        assertThat(savedMessages.get(3).getRole()).isEqualTo(ChatRole.ASSISTANT);
-        assertThat(savedMessages.get(3).getContent()).isEqualTo("The answer is 4.0.");
+        assertThat(savedMessages.get(1).getContent()).isEqualTo("The answer is 4.0.");
     }
 
     @Test
@@ -123,11 +126,17 @@ class AgentTest {
         // Arrange
         when(llmClientFactory.getClient(ApiFormat.OPENAI)).thenReturn(llmClient);
 
-        String llmResponse = "Thought: The user is greeting me.\nFinal Answer: Hello! How can I help you?";
+        String llmResponse = """
+                {
+                  "thought": "The user is greeting me.",
+                  "toolCall": null,
+                  "finalAnswer": "Hello! How can I help you?"
+                }
+                """;
         when(llmClient.generate(any(), any(), any(), any(), any())).thenReturn(llmResponse);
 
         // Act
-        String result = agent.processQuery(session, "Hello");
+        String result = agent.processQuery(session, "Hello", null);
 
         // Assert
         assertThat(result).isEqualTo("Hello! How can I help you?");
@@ -147,26 +156,43 @@ class AgentTest {
         when(llmClientFactory.getClient(ApiFormat.OPENAI)).thenReturn(llmClient);
 
         // LLM tries to call 'weather' tool which is not enabled in session
-        String llmResponse1 = "Thought: I need to check the weather.\nAction: weather[London]";
-        String llmResponse2 = "Thought: The weather tool is not available.\nFinal Answer: I cannot check the weather because the tool is not enabled.";
+        String llmResponse1 = """
+                {
+                  "thought": "I need to check the weather.",
+                  "toolCall": {
+                    "name": "weather",
+                    "arguments": "London"
+                  },
+                  "finalAnswer": null
+                }
+                """;
+        String llmResponse2 = """
+                {
+                  "thought": "The weather tool is not available.",
+                  "toolCall": null,
+                  "finalAnswer": "I cannot check the weather because the tool is not enabled."
+                }
+                """;
 
         when(llmClient.generate(any(), any(), any(), any(), any()))
                 .thenReturn(llmResponse1)
                 .thenReturn(llmResponse2);
 
         // Act
-        String result = agent.processQuery(session, "What is the weather in London?");
+        String result = agent.processQuery(session, "What is the weather in London?", null);
 
         // Assert
         assertThat(result).isEqualTo("I cannot check the weather because the tool is not enabled.");
 
         ArgumentCaptor<ChatMessageEntity> messageCaptor = ArgumentCaptor.forClass(ChatMessageEntity.class);
-        verify(chatMessageRepository, times(4)).save(messageCaptor.capture());
+        verify(chatMessageRepository, times(2)).save(messageCaptor.capture());
 
         List<ChatMessageEntity> savedMessages = messageCaptor.getAllValues();
         
-        // Tool observation should contain the error message
-        assertThat(savedMessages.get(2).getRole()).isEqualTo(ChatRole.TOOL);
-        assertThat(savedMessages.get(2).getContent()).contains("Error: Tool 'weather' is not available in this session.");
+        // 1. User query
+        assertThat(savedMessages.get(0).getRole()).isEqualTo(ChatRole.USER);
+        // 2. Assistant final answer
+        assertThat(savedMessages.get(1).getRole()).isEqualTo(ChatRole.ASSISTANT);
+        assertThat(savedMessages.get(1).getContent()).isEqualTo("I cannot check the weather because the tool is not enabled.");
     }
 }

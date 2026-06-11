@@ -121,7 +121,13 @@ class AgentIntegrationTest {
         // 3. Mock LLM Client for Chat
         when(llmClientFactory.getClient(ApiFormat.OPENAI)).thenReturn(llmClient);
         when(llmClient.generate(any(), any(), any(), any(), any()))
-                .thenReturn("Thought: The user is greeting me.\nFinal Answer: Hello! How can I help you today?");
+                .thenReturn("""
+                        {
+                          "thought": "The user is greeting me.",
+                          "toolCall": null,
+                          "finalAnswer": "Hello! How can I help you today?"
+                        }
+                        """);
 
         // 4. Send Chat Query
         ChatRequest chatRequest = ChatRequest.builder()
