@@ -39,6 +39,7 @@ class AgentTest {
     private ChatMessageRepository chatMessageRepository;
 
     private ToolRegistry toolRegistry;
+    private AgentHelper agentHelper;
     private Agent agent;
 
     private SessionEntity session;
@@ -50,7 +51,8 @@ class AgentTest {
         toolRegistry = new ToolRegistry(List.of(calculatorTool));
         toolRegistry.init();
 
-        agent = new Agent(llmClientFactory, toolRegistry, chatMessageRepository);
+        agentHelper = new AgentHelper(toolRegistry);
+        agent = new Agent(llmClientFactory, chatMessageRepository, agentHelper);
 
         model = ModelEntity.builder()
                 .id(UUID.randomUUID())
