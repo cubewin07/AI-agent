@@ -4,15 +4,18 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class AnthropicLlmClient implements LlmClient {
 
-    private final RestClient restClient = RestClient.builder().build();
+    private final RestClient restClient;
 
     @Override
     @SuppressWarnings("unchecked")

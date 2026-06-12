@@ -1,21 +1,28 @@
 package com.myapp.agent.llm;
 
+import org.flywaydb.core.api.logging.Log;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class OpenAiLlmClient implements LlmClient {
 
-    private final RestClient restClient = RestClient.builder().build();
+    private final RestClient restClient;
 
     @Override
     @SuppressWarnings("unchecked")
     public String generate(String systemPrompt, List<ChatMessageDto> history, String apiKey, String url, String modelName) {
+
         List<Map<String, String>> messages = new ArrayList<>();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
             messages.add(Map.of("role", "system", "content", systemPrompt));
@@ -26,7 +33,8 @@ public class OpenAiLlmClient implements LlmClient {
 
         Map<String, Object> requestBody = Map.of(
                 "model", modelName,
-                "messages", messages
+                "messages", messages,
+                "stream", false
         );
 
         try {
