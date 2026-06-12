@@ -49,6 +49,10 @@ public class Agent {
         List<ChatMessageDto> history;
         if (clientHistory != null) {
             history = new ArrayList<>(clientHistory);
+            history.add(ChatMessageDto.builder()
+                    .role("user")
+                    .content(query)
+                    .build());
         } else {
             List<ChatMessageEntity> historyEntities = chatMessageRepository.findBySessionOrderByCreatedAtAsc(session);
             history = historyEntities.stream()
