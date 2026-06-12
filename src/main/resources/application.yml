@@ -5,9 +5,9 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/myapp}
-    username: ${DATABASE_USERNAME:myapp}
-    password: ${DATABASE_PASSWORD:myapp}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/ai_agent}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:071208}
     hikari:
       maximum-pool-size: ${DB_HIKARI_MAX_POOL_SIZE:10}
       minimum-idle: ${DB_HIKARI_MIN_IDLE:2}
